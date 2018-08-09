@@ -4,20 +4,6 @@ metadata:
   labels:
     run: hubot
   name: hubot
-  annotations:
-    pod.beta.kubernetes.io/init-containers: '[
-        {
-            "name": "init",
-            "image": "node",
-            "command": ["npm", "install"],
-            "volumeMounts": [
-                {
-                    "name": "config",
-                    "mountPath": "/hubot"
-                }
-            ]
-        }
-    ]'
 spec:
   replicas: 1
   selector:
@@ -30,22 +16,13 @@ spec:
       labels:
         run: hubot
     spec:
-      volumes:
-        - name: config
-          configMap:
-            name: hubot
       containers:
-      - env:
-        - name: GOOGLE_API_KEY
-          valueFrom:
-            secretKeyRef:
-              key: GOOGLE_API_KEY
-              name: hubot
-        - name: GOOGLE_CUSTOM_SEARCH
-          valueFrom:
-            secretKeyRef:
-              key: GOOGLE_CUSTOM_SEARCH
-              name: hubot
+      - name: hubot
+        imagePullPolicy: Always
+        image: quay.io/rk295/kubernetes-hubot:latest
+        env:
+        - name: DEBUG
+          value: "true"
         - name: HUBOT_SLACK_TOKEN
           valueFrom:
             secretKeyRef:
@@ -53,9 +30,10 @@ spec:
               name: hubot
         - name: MAX_SEARCH_RESULTS
           value: "1"
-        image: quay.io/nordstrom/hubot
-        imagePullPolicy: Always
-        name: hubot
         volumeMounts:
           - name: config
-            mountPath: /hubot
+            mountPath: /hubot-scripts
+      volumes:
+        - name: config
+          configMap:
+            name: hubot

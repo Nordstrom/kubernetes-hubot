@@ -1,9 +1,50 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-set -e
+set -eEu -o pipefail
 
-cd hubot
+src="/hubot-scripts"
+dst="/hubot"
+
+: "${DEBUG:=}"
+
+if [[ ! -z "$DEBUG" ]]; then
+    set -x
+fi
+
+# Check these two versions
+if [[ ! -d "$src" ]]; then
+    echo "ERROR: src directory ($src) must exist. Cannot continue."
+    exit 1
+fi
+
+if [[ ! -d "$dst" ]]; then
+    echo "ERROR: dst directory ($dst) must exist. Cannot continue."
+    exit 1
+fi
+
+# -L *required* here to dereference symlinks, in the event this
+# is run in kubernetes (as was intended) and the files are presented
+# via a ConfigMap (as was intended!)
+echo "INFO: Copying all files from $src to $dst"
+cp -avL "${src}/"* "${dst}/"
+
+# Some helpful debug output when I encountered errors
+if [[ ! -z "$DEBUG" ]]; then
+    echo "DEBUG: Find output follows:"
+    find "$dst"
+
+    echo "DEBUG: ls $dst output follows:"
+    ls -l "$dst"
+
+    echo "DEBUG: ls pwd output follows:"
+    ls -l
+fi
+
+cd "$dst"
+
+echo "INFO: Running npm install"
 npm install
-export PATH="node_modules/.bin:node_modules/hubot/node_modules/.bin:$PATH"
 
+export PATH="node_modules/.bin:node_modules/hubot/node_modules/.bin:$PATH"
+echo "INFO: Running hubot"
 exec node_modules/.bin/hubot --name "hubot" "$@"
